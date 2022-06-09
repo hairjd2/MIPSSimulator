@@ -9,3 +9,4 @@
 - Can read in MIPS file
 - Able to break down each instruction
 - Tigress easter egg
+- Saul Goodman cameo
