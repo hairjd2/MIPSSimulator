@@ -64,6 +64,6 @@ void readFile(string fileName, int lines) {
     inputFile.close();
 
     for(int i = 0; i < lines; i++) {
-        cout << instructions[i].getInstruction() << ", " << instructions[i].getStoredRegister() << ", " << instructions[i].getAddress() << ", " << instructions[i].getRegister1() << ", " << instructions[i].getRegister2() << endl;
+        cout << instructions[i].getInstruction() << instructions[i].getStoredRegister() << instructions[i].getAddress() << instructions[i].getRegister1() << instructions[i].getRegister2() << endl;
     }
 }
