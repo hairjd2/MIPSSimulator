@@ -31,3 +31,6 @@
 *.out
 *.app
 output
+
+# VS Code
+.vscode/*
