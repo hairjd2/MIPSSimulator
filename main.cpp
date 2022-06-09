@@ -7,13 +7,32 @@ using namespace std;
 int MEMORY_TABLE[19] = {45, 12, 0, 0, 10, 135, 254, 127, 18, 4, 55, 8, 2, 98, 13, 5, 233, 158, 167};
 
 void readFile(string fileName, int lines);
+int findLines(string fileName);
 
 int main() {
     string fileName;
     cout << "What file would you like to input: ";
     cin >> fileName;
-    int lines = 9;
-    readFile(fileName, lines);
+    readFile(fileName, findLines(fileName));
+}
+
+int findLines(string fileName) {
+    ifstream inputFile;
+    inputFile.open(fileName);
+    int lines = 0;
+
+    if(inputFile.is_open()) {
+        lines++;
+        char currChar;
+
+        while(inputFile) {
+            inputFile.get(currChar);
+            if(currChar == '\n') {
+                lines++;
+            }
+        }
+    }
+    return lines;
 }
 
 void readFile(string fileName, int lines) {
