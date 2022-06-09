@@ -33,4 +33,4 @@
 output
 
 # VS Code
-.vscode/*
+.vscode\*
