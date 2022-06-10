@@ -13,6 +13,15 @@ int main() {
     string fileName;
     cout << "What file would you like to input: ";
     cin >> fileName;
+
+    ifstream inputFile;
+    inputFile.open(fileName);
+    while (inputFile.fail()) {
+        cerr << "Error opening file!" << endl << "What file would you like to input: ";
+        cin >> fileName;
+        inputFile.open(fileName);
+    }
+
     readFile(fileName, findLines(fileName));
 }
 
@@ -20,7 +29,6 @@ int findLines(string fileName) {
     ifstream inputFile;
     inputFile.open(fileName);
     int lines = 0;
-
     if(inputFile.is_open()) {
         lines++;
         char currChar;
@@ -83,6 +91,7 @@ void readFile(string fileName, int lines) {
     inputFile.close();
 
     for(int i = 0; i < lines; i++) {
+        // should this line be shortened / split into two lines?
         cout << instructions[i].getInstruction() << instructions[i].getStoredRegister() << instructions[i].getAddress() << instructions[i].getRegister1() << instructions[i].getRegister2() << endl;
     }
 }
