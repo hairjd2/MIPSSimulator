@@ -18,6 +18,7 @@ const int INT_UNIT_CYCLES = 1;
 int memoryTable[MEMORY_SIZE] = {45, 12, 0, 0, 10, 135, 254, 127, 18, 4, 55, 8, 2, 98, 13, 5, 233, 158, 167};
 float floatingPointRegisters[FP_REGISTER_COUNT];
 int integerRegisters[INT_REGISTER_COUNT];
+int clockCycle = 0;
 
 //Helper Functions
 void readFile(string fileName, int lines);
@@ -129,7 +130,7 @@ void readFile(string fileName, int lines) {
     for(int i = 0; i < lines; i++) {
         // This for loop for now just outputs all of the fields that every object has as a test
         // I'm gonna implement another function to keep track of the delays and stuff and what stages each one is at.
-        cout << instructions[i].getInstruction() << instructions[i].getStoredRegister() << instructions[i].getAddress() << instructions[i].getRegister1() << instructions[i].getRegister2() << endl;
+        instructions[i].displayScoreBoardLine();
     }
     cout << endl;
 }

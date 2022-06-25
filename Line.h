@@ -10,6 +10,10 @@ private:
     string m_register2;
     string m_storedRegister;
     string m_address;
+    int m_issue;
+    int m_readOperands;
+    int m_execution;
+    int m_writeResult;
 
 public:
     Line();
@@ -23,6 +27,11 @@ public:
     string getAddress();
     string getRegister1();
     string getRegister2();
+    void setIssue(int issue);
+    void setReadOperands(int readOperands);
+    void setExecution(int execution);
+    void setWriteResult(int writeResult);
+    void displayScoreBoardLine();
 };
 
 #endif
