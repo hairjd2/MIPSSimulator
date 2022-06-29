@@ -3,7 +3,7 @@
 #include <iostream>
 using namespace std;
 
-template <typename T>
+template <class T>
 class Register {
 private:
     bool m_inUse;
@@ -11,9 +11,9 @@ private:
 public:
     Register();
     void setInUse(bool inUse);
-    void setValue(int value);
+    void setValue(T value);
     bool getInUse();
-    int getValue();
+    T getValue();
 };
 
 #endif

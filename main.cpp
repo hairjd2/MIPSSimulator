@@ -17,8 +17,8 @@ const int INT_UNIT_CYCLES = 1;
 
 //Memory and register values
 int memoryTable[MEMORY_SIZE] = {45, 12, 0, 0, 10, 135, 254, 127, 18, 4, 55, 8, 2, 98, 13, 5, 233, 158, 167};
-float floatingPointRegisters[FP_REGISTER_COUNT];
-Register integerRegisters[INT_REGISTER_COUNT];
+Register<float> floatingPointRegisters[FP_REGISTER_COUNT];
+Register<int> integerRegisters[INT_REGISTER_COUNT];
 int clockCycle = 0;
 
 //Helper Functions
@@ -140,7 +140,7 @@ void outputResult() {
 // Outputs all floating point register values
     cout << "Floating Point Register Values:" << endl;
     for(int i = 0; i < FP_REGISTER_COUNT; i++) {
-        cout << "F" << i << ": " << floatingPointRegisters[i] << endl;
+        cout << "F" << i << ": " << floatingPointRegisters[i].getValue() << endl;
     }
 
 // Outputs all floating point register values
