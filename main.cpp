@@ -2,6 +2,7 @@
 #include <fstream>
 #include <string>
 #include "Line.h"
+#include "Register.h"
 using namespace std;
 
 // Constant values
@@ -17,7 +18,7 @@ const int INT_UNIT_CYCLES = 1;
 //Memory and register values
 int memoryTable[MEMORY_SIZE] = {45, 12, 0, 0, 10, 135, 254, 127, 18, 4, 55, 8, 2, 98, 13, 5, 233, 158, 167};
 float floatingPointRegisters[FP_REGISTER_COUNT];
-int integerRegisters[INT_REGISTER_COUNT];
+Register integerRegisters[INT_REGISTER_COUNT];
 int clockCycle = 0;
 
 //Helper Functions
@@ -145,6 +146,6 @@ void outputResult() {
 // Outputs all floating point register values
     cout << endl << "Integer Register Values:" << endl;
     for(int j = 0; j < FP_REGISTER_COUNT; j++) {
-        cout << "$" << j << ": " << integerRegisters[j] << endl;
+        cout << "$" << j << ": " << integerRegisters[j].getValue() << endl;
     }
 }
