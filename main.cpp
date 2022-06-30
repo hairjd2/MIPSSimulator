@@ -27,6 +27,18 @@ int findLines(string fileName);
 void outputResult();
 
 int main() {
+// initializes all Registers in both arrays to hold default 'false' and '0' values
+for (int i = 0; i < sizeof(floatingPointRegisters); i++)
+{
+    floatingPointRegisters[i].setInUse(false);
+    floatingPointRegisters[i].setValue(0);
+}
+for (int i = 0; i < sizeof(integerRegisters); i++)
+{
+    integerRegisters[i].setInUse(false);
+    integerRegisters[i].setValue(0);
+}
+
 // Main function: takes in initial inputs and runs the helper functions
 // Gets file name
     string fileName;
