@@ -1,8 +1,10 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <sstream>
 #include "Line.h"
-#include "Register.h"
+#include "IntRegister.h"
+#include "FloatRegister.h"
 using namespace std;
 
 // Constant values
@@ -17,28 +19,16 @@ const int INT_UNIT_CYCLES = 1;
 
 //Memory and register values
 int memoryTable[MEMORY_SIZE] = {45, 12, 0, 0, 10, 135, 254, 127, 18, 4, 55, 8, 2, 98, 13, 5, 233, 158, 167};
-Register<float> floatingPointRegisters[FP_REGISTER_COUNT];
-Register<int> integerRegisters[INT_REGISTER_COUNT];
+FloatRegister floatingPointRegisters[FP_REGISTER_COUNT];
+IntRegister integerRegisters[INT_REGISTER_COUNT]; 
 int clockCycle = 0;
 
 //Helper Functions
-void readFile(string fileName, int lines);
+void readFile(string fileName, int lines, Line *instructions);
 int findLines(string fileName);
-void outputResult();
+void outputResult(Line *instructions, int lines);
 
 int main() {
-// initializes all Registers in both arrays to hold default 'false' and '0' values
-for (int i = 0; i < sizeof(floatingPointRegisters); i++)
-{
-    floatingPointRegisters[i].setInUse(false);
-    floatingPointRegisters[i].setValue(0);
-}
-for (int i = 0; i < sizeof(integerRegisters); i++)
-{
-    integerRegisters[i].setInUse(false);
-    integerRegisters[i].setValue(0);
-}
-
 // Main function: takes in initial inputs and runs the helper functions
 // Gets file name
     string fileName;
@@ -54,11 +44,24 @@ for (int i = 0; i < sizeof(integerRegisters); i++)
         inputFile.open(fileName);
     }
     inputFile.close();
-    
+
+    string tempName = "";
+    for(int i = 0; i < sizeof(floatingPointRegisters)/sizeof(floatingPointRegisters[0]); i++) {
+        tempName = "F" + to_string(i);
+        floatingPointRegisters[i].setName(tempName);
+    }
+
+    for(int j = 0; j < sizeof(integerRegisters)/sizeof(integerRegisters[0]); j++) {
+        tempName = "$" + to_string(j);
+        integerRegisters[j].setName(tempName);
+    }
+    int lines = findLines(fileName);
+    Line *instructions = new Line[lines];
+
 // Once file is valid, readfile is called after getting number of lines from findLines
-    readFile(fileName, findLines(fileName));
+    readFile(fileName, lines, instructions);
 // Outputs final register values and table
-    outputResult();
+    outputResult(instructions, lines);
 }
 
 int findLines(string fileName) {
@@ -84,12 +87,11 @@ int findLines(string fileName) {
     return lines;
 }
 
-void readFile(string fileName, int lines) {
+void readFile(string fileName, int lines, Line *instructions) {
 // Opens file and initializes temp string for each word inputted and the array of Line objects
     ifstream inputFile;
     inputFile.open(fileName.c_str());
     string temp;
-    Line instructions[lines];
 
     if (inputFile.is_open()) {
 // The point of count is to keep track at which "word" the loop is on on the line
@@ -103,7 +105,7 @@ void readFile(string fileName, int lines) {
                 instructions[line].setInstruction(temp);
 // If the instruction is load or store, that means it only will have two arguments, one including an address, meaning the count must be added twice instead of once
 // Else, just add count once
-                if(temp == "L.D" || temp == "S.D") {
+                if(temp.at(0) == 'L' || (temp.at(0) == 'S' && temp.at(1) != 'U')) {
                     count++;
                     memory = true;
                 }
@@ -139,25 +141,28 @@ void readFile(string fileName, int lines) {
        
     }
     inputFile.close();
-// Will keep track of the program and calculate how long for each cycle it will take
-    for(int i = 0; i < lines; i++) {
-        // This for loop for now just outputs all of the fields that every object has as a test
-        // I'm gonna implement another function to keep track of the delays and stuff and what stages each one is at.
-        instructions[i].displayScoreBoardLine();
-    }
     cout << endl;
 }
 
-void outputResult() {
+void outputResult(Line *instructions, int lines) {
 // Outputs all floating point register values
     cout << "Floating Point Register Values:" << endl;
     for(int i = 0; i < FP_REGISTER_COUNT; i++) {
-        cout << "F" << i << ": " << floatingPointRegisters[i].getValue() << endl;
+        floatingPointRegisters[i].displayValue();
     }
 
 // Outputs all floating point register values
     cout << endl << "Integer Register Values:" << endl;
     for(int j = 0; j < FP_REGISTER_COUNT; j++) {
-        cout << "$" << j << ": " << integerRegisters[j].getValue() << endl;
+        integerRegisters[j].displayValue();
     }
+    
+    // Will keep track of the program and calculate how long for each cycle it will take
+    cout << endl << "Scoreboard Results:" << endl;
+    for(int i = 0; i < lines; i++) {
+        // This for loop for now just outputs all of the fields that every object has as a test
+        instructions[i].displayScoreBoardLine();
+    }
+
+    delete [] instructions;
 }
