@@ -105,7 +105,6 @@ void Line::displayScoreBoardLine() {
     cout << "\tRead Operands: " << m_readOperands;
     cout << "\tExecution: " << m_execution;
     cout << "\tWrite Results: " << m_writeResult;
-    cout << "\tAccesses Mem: " << m_accessesMem;
     cout << endl;
     
 }
