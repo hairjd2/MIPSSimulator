@@ -10,10 +10,12 @@ private:
     string m_register2;
     string m_storedRegister;
     string m_address;
+    int m_immediate;
     int m_issue;
     int m_readOperands;
     int m_execution;
     int m_writeResult;
+    bool m_accessesMem;
 
 public:
     Line();
@@ -22,11 +24,15 @@ public:
     void setRegister1(string register1);
     void setRegister2(string register2);
     void setAddress(string address);
+    void setImmediate(int immediate); 
+    void setAccessesMem(bool accessesMem);
     string getInstruction();
     string getStoredRegister();
     string getAddress();
     string getRegister1();
     string getRegister2();
+    int getImmediate();
+    bool getAccessesMem();
     void setIssue(int issue);
     void setReadOperands(int readOperands);
     void setExecution(int execution);

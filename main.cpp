@@ -122,6 +122,7 @@ void readFile(string fileName, int lines, Line *instructions) {
                 if(temp.at(0) == 'L' || (temp.at(0) == 'S' && temp.at(1) != 'U')) {
                     count++;
                     memory = true;
+                    instructions[line].setAccessesMem(memory);
                 }
             }
 // If count is 1 or count is 2 and it is a load or store instruction, then the read in is on the second "word", a.k.a. the "stored register"
@@ -137,12 +138,15 @@ void readFile(string fileName, int lines, Line *instructions) {
                 if(memory) {
                     instructions[line].setAddress(temp);
                 }
+                else if(instructions[line].getInstruction() == "ADDI") {
+                    instructions[line].setImmediate(stoi(temp));
+                }
+
                 else {
 // If count is 3 and not memory related, temp holds the second register of the arithmetic argument
                     instructions[line].setRegister2(temp);
                 }
             }
-
             count++;
 // Once the count has reached 3, it has reached the end of the line and must keep track of the next line
             if(count > 3) {
