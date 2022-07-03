@@ -12,10 +12,10 @@ const int MEMORY_SIZE = 19;
 const int FP_REGISTER_COUNT = 32;
 const int INT_REGISTER_COUNT = 32;
 
-const int FP_ADD_SUB_CYCLES = 2;
-const int MUL_CYCLES = 10;
-const int DIV_CYCLES = 40;
-const int INT_UNIT_CYCLES = 1; 
+int FPAddSubCycles = 0;
+int MULCycles = 0;
+int DIVCycles = 0;
+int intUnitCycles = 0;
 
 //Memory and register values
 int memoryTable[MEMORY_SIZE] = {45, 12, 0, 0, 10, 135, 254, 127, 18, 4, 55, 8, 2, 98, 13, 5, 233, 158, 167};
@@ -24,8 +24,9 @@ IntRegister integerRegisters[INT_REGISTER_COUNT];
 int clockCycle = 0;
 
 //Helper Functions
-void readFile(string fileName, int lines, Line *instructions);
 int findLines(string fileName);
+void readFile(string fileName, int lines, Line *instructions);
+void run(Line *instructions, int lines);
 void outputResult(Line *instructions, int lines);
 
 int main() {
@@ -45,13 +46,22 @@ int main() {
     }
     inputFile.close();
 
+    cout << "How many cycles does floating point add/sub unit take: ";
+    cin >> FPAddSubCycles;
+    cout << "How many cycles does the Multiplication unit take: ";
+    cin >> MULCycles;
+    cout << "How many cycles does the Division unit take: ";
+    cin >> DIVCycles;
+    cout << "How many cycles do integer units take (including store and load): ";
+    cin >> intUnitCycles;
+
     string tempName = "";
-    for(int i = 0; i < sizeof(floatingPointRegisters)/sizeof(floatingPointRegisters[0]); i++) {
+    for(long unsigned int i = 0; i < sizeof(floatingPointRegisters)/sizeof(floatingPointRegisters[0]); i++) {
         tempName = "F" + to_string(i);
         floatingPointRegisters[i].setName(tempName);
     }
 
-    for(int j = 0; j < sizeof(integerRegisters)/sizeof(integerRegisters[0]); j++) {
+    for(long unsigned int j = 0; j < sizeof(integerRegisters)/sizeof(integerRegisters[0]); j++) {
         tempName = "$" + to_string(j);
         integerRegisters[j].setName(tempName);
     }
@@ -60,6 +70,10 @@ int main() {
 
 // Once file is valid, readfile is called after getting number of lines from findLines
     readFile(fileName, lines, instructions);
+
+// Runs the instructions given and finds the cycle times for each stage
+    run(instructions, lines);
+
 // Outputs final register values and table
     outputResult(instructions, lines);
 }
@@ -142,6 +156,10 @@ void readFile(string fileName, int lines, Line *instructions) {
     }
     inputFile.close();
     cout << endl;
+}
+
+void run(Line *instructions, int lines) {
+    
 }
 
 void outputResult(Line *instructions, int lines) {
