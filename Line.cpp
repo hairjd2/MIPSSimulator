@@ -97,11 +97,15 @@ void Line::displayScoreBoardLine() {
     }
     
     if(m_instruction == "ADDI") {
-        cout << "\t\tIssue: " << m_issue;
+        cout << "\t\tDest: " << m_storedRegister;
     }
     else {
-        cout << "\tIssue: " << m_issue;
+        cout << "\tDest: " << m_storedRegister;
     }
+
+    cout << "\tS1: " << m_register1;
+    cout << "\tS2: " << m_register2;
+    cout << "\tIssue: " << m_issue;
     cout << "\tRead Operands: " << m_readOperands;
     cout << "\tExecution: " << m_execution;
     cout << "\tWrite Results: " << m_writeResult;

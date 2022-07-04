@@ -12,10 +12,10 @@ const int MEMORY_SIZE = 19;
 const int FP_REGISTER_COUNT = 32;
 const int INT_REGISTER_COUNT = 32;
 
-int FPAddSubCycles = 0;
-int MULCycles = 0;
-int DIVCycles = 0;
-int intUnitCycles = 0;
+int NumAdders = 0;
+int NumMultipliers = 0;
+int NumDividers = 0;
+int NumIntegerUnits = 0;
 
 //Memory and register values
 int memoryTable[MEMORY_SIZE] = {45, 12, 0, 0, 10, 135, 254, 127, 18, 4, 55, 8, 2, 98, 13, 5, 233, 158, 167};
@@ -46,14 +46,14 @@ int main() {
     }
     inputFile.close();
 
-    cout << "How many cycles does floating point add/sub unit take: ";
-    cin >> FPAddSubCycles;
-    cout << "How many cycles does the Multiplication unit take: ";
-    cin >> MULCycles;
-    cout << "How many cycles does the Division unit take: ";
-    cin >> DIVCycles;
-    cout << "How many cycles do integer units take (including store and load): ";
-    cin >> intUnitCycles;
+    cout << "Enter the number of adders: ";
+    cin >> NumAdders;
+    cout << "Enter the number of multipliers: ";
+    cin >> NumMultipliers;
+    cout << "Enter the number of dividers: ";
+    cin >> NumDividers;
+    cout << "Enter the number of integer units: ";
+    cin >> NumIntegerUnits;
 
     string tempName = "";
     for(long unsigned int i = 0; i < sizeof(floatingPointRegisters)/sizeof(floatingPointRegisters[0]); i++) {
@@ -72,7 +72,7 @@ int main() {
     readFile(fileName, lines, instructions);
 
 // Runs the instructions given and finds the cycle times for each stage
-    run(instructions, lines);
+    run(instructions, lines); //may need to pass NumAdders, NumDividers, etc
 
 // Outputs final register values and table
     outputResult(instructions, lines);
@@ -163,7 +163,65 @@ void readFile(string fileName, int lines, Line *instructions) {
 }
 
 void run(Line *instructions, int lines) {
+    /* Steps for scoreboarding process
+    Choose next instruction
+    Check if instruction of same type is being run
+    If it is, don't issue. If it's not, check if the dest reg is already being written to
+    If it is, don't issue. If not, issue the instruction
+
+    Check each instruction currently issued to see if it can be read:
+    is m_reg1 or m_reg2 the same as the dest reg of an instruction currently executing?
+    if yes, do not read. If no, read
+
+    Check each instruction in execution if the curr cycle == cycle execution will finish
+    if they're equal, mark execution as done. If not, continue
+
+    Check each instruction for writeback
+    if execution is marked as done, writeback
+    */
+    int addersInUse = NumAdders;
+    int multipliersInUse = NumMultipliers;
+    int dividersInUse = NumDividers;
+    int integerUnitsInUse = NumIntegerUnits;
+    int cycleCount = 1;
+    int instructionIndex = 0; //index for current instruction in array
+    bool finished = false;
+    while (finished == false) {
+        string currInstruction = instructions[instructionIndex].getInstruction();
+        if (currInstruction == "ADD" || currInstruction == "ADDI" || currInstruction == "ADD.D" 
+        || currInstruction == "SUB" || currInstruction == "SUB.D") {
+            if (addersInUse > 0) { //check for any available adders
+                addersInUse--;
+                instructions[instructionIndex].setIssue(cycleCount);
+            }
+        } else if (currInstruction == "MUL.D") {
+            if (multipliersInUse > 0) { //check for any available adders
+                multipliersInUse--;
+                instructions[instructionIndex].setIssue(cycleCount);
+            }
+        }
+
+        instructionIndex++;
+        cycleCount++;
+    }
     
+}
+
+// REMAKE WITH TEMPLATES AND CHECK ORDER OF OPERATIONS!!!!!!!!!!
+void add(IntRegister dest, IntRegister r1, IntRegister r2) {
+    dest.setValue(r1.getValue() + r2.getValue());
+}
+
+void subtract(IntRegister dest, IntRegister r1, IntRegister r2) {
+    dest.setValue(r1.getValue() - r2.getValue());
+}
+
+void multiply(IntRegister dest, IntRegister r1, IntRegister r2) {
+    dest.setValue(r1.getValue() * r2.getValue());
+}
+
+void divide(IntRegister dest, IntRegister r1, IntRegister r2) {
+    dest.setValue(r1.getValue() / r2.getValue());
 }
 
 void outputResult(Line *instructions, int lines) {
