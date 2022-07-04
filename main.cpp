@@ -162,7 +162,7 @@ void readFile(string fileName, int lines, Line *instructions) {
     cout << endl;
 }
 
-void run(Line *instructions, int lines) {
+void run(Line *instructions, int lines, FloatRegister floatingPointRegisters, IntRegister integerRegisters) {
     /* Steps for scoreboarding process
     Choose next instruction
     Check if instruction of same type is being run
@@ -188,15 +188,28 @@ void run(Line *instructions, int lines) {
     bool finished = false;
     while (finished == false) {
         string currInstruction = instructions[instructionIndex].getInstruction();
-        if (currInstruction == "ADD" || currInstruction == "ADDI" || currInstruction == "ADD.D" 
-        || currInstruction == "SUB" || currInstruction == "SUB.D") {
+        if (currInstruction == "ADD" || currInstruction == "ADDI" || currInstruction == "ADD.D" || currInstruction == "SUB" || currInstruction == "SUB.D") {
             if (addersInUse > 0) { //check for any available adders
-                addersInUse--;
-                instructions[instructionIndex].setIssue(cycleCount);
+                if (instructions[instructionIndex].getStoredRegister().at(0) == 'F') {
+                    if (instructions[instructionIndex].getStoredRegister()) //FIND WAY TO COMPARE REGISTER HERE TO REGISTER OBJECT AND IT'S INUSE BOOL
+                    
+                    addersInUse--;
+                    instructions[instructionIndex].setIssue(cycleCount);
+                }
             }
         } else if (currInstruction == "MUL.D") {
-            if (multipliersInUse > 0) { //check for any available adders
+            if (multipliersInUse > 0) { //check for any available multipliers
                 multipliersInUse--;
+                instructions[instructionIndex].setIssue(cycleCount);
+            }
+        } else if (currInstruction == "DIV.D") {
+            if (dividersInUse > 0) { //check for any available dividers
+                dividersInUse--;
+                instructions[instructionIndex].setIssue(cycleCount);
+            }
+        } else if (currInstruction == "L.D" || currInstruction == "S.D" || currInstruction == "LI" || currInstruction == "LW" || currInstruction == "SW") {
+            if (integerUnitsInUse > 0) { //check for any available integer units
+                integerUnitsInUse--;
                 instructions[instructionIndex].setIssue(cycleCount);
             }
         }
