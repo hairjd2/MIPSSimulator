@@ -16,6 +16,12 @@ public:
     bool getInUse();
     float getValue();
     void displayValue();
+    void add(float r1, float r2);
+    void addi(float r1, int immediate);
+    void sub(float r1, float r2);
+    void mul(float r1, float r2);
+    void div(float r1, float r2);
+    void load(int value);
 };
 
 #endif

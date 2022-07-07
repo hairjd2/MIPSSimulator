@@ -17,6 +17,8 @@ int NumMultipliers = 0;
 int NumDividers = 0;
 int NumIntegerUnits = 0;
 
+int lines = 0;
+
 //Memory and register values
 int memoryTable[MEMORY_SIZE] = {45, 12, 0, 0, 10, 135, 254, 127, 18, 4, 55, 8, 2, 98, 13, 5, 233, 158, 167};
 FloatRegister floatingPointRegisters[FP_REGISTER_COUNT];
@@ -28,6 +30,16 @@ int findLines(string fileName);
 void readFile(string fileName, int lines, Line *instructions);
 void run(Line *instructions, int lines);
 void outputResult(Line *instructions, int lines);
+
+// Stage Functions
+int issue(int cycleCount, int programCounter, Line *instructions);
+void readOperands(int cycleCount, Line *instructions);
+void executionComplete(int cycleCount, Line *instructions);
+void writeResult(int cycleCount, Line *instructions);
+
+// Arithmetic Functions
+template <typename T>
+void store(int address, T r1);
 
 int main() {
 // Main function: takes in initial inputs and runs the helper functions
@@ -56,16 +68,16 @@ int main() {
     cin >> NumIntegerUnits;
 
     string tempName = "";
-    for(long unsigned int i = 0; i < sizeof(floatingPointRegisters)/sizeof(floatingPointRegisters[0]); i++) {
+    for(int i = 0; i < FP_REGISTER_COUNT; i++) {
         tempName = "F" + to_string(i);
         floatingPointRegisters[i].setName(tempName);
     }
 
-    for(long unsigned int j = 0; j < sizeof(integerRegisters)/sizeof(integerRegisters[0]); j++) {
+    for(int j = 0; j < INT_REGISTER_COUNT; j++) {
         tempName = "$" + to_string(j);
         integerRegisters[j].setName(tempName);
     }
-    int lines = findLines(fileName);
+    lines = findLines(fileName);
     Line *instructions = new Line[lines];
 
 // Once file is valid, readfile is called after getting number of lines from findLines
@@ -127,7 +139,11 @@ void readFile(string fileName, int lines, Line *instructions) {
             }
 // If count is 1 or count is 2 and it is a load or store instruction, then the read in is on the second "word", a.k.a. the "stored register"
             else if(count == 1 || (count == 2 && memory)) {
-                instructions[line].setStoredRegister(temp);
+                if(instructions[line].getInstruction() == "LI") {
+                    instructions[line].setImmediate(stoi(temp));
+                }else {
+                    instructions[line].setStoredRegister(temp);
+                }
             }
 // If count is 2 but not a load or store instruction, then it is the first register in the arithmetic input
             else if(count == 2) {
@@ -162,7 +178,7 @@ void readFile(string fileName, int lines, Line *instructions) {
     cout << endl;
 }
 
-void run(Line *instructions, int lines, FloatRegister floatingPointRegisters, IntRegister integerRegisters) {
+void run(Line *instructions, int lines) {
     /* Steps for scoreboarding process
     Choose next instruction
     Check if instruction of same type is being run
@@ -179,62 +195,189 @@ void run(Line *instructions, int lines, FloatRegister floatingPointRegisters, In
     Check each instruction for writeback
     if execution is marked as done, writeback
     */
-    int addersInUse = NumAdders;
-    int multipliersInUse = NumMultipliers;
-    int dividersInUse = NumDividers;
-    int integerUnitsInUse = NumIntegerUnits;
     int cycleCount = 1;
-    int instructionIndex = 0; //index for current instruction in array
+    int programCounter = 0; //index for current instruction in array
     bool finished = false;
     while (finished == false) {
-        string currInstruction = instructions[instructionIndex].getInstruction();
-        if (currInstruction == "ADD" || currInstruction == "ADDI" || currInstruction == "ADD.D" || currInstruction == "SUB" || currInstruction == "SUB.D") {
-            if (addersInUse > 0) { //check for any available adders
-                if (instructions[instructionIndex].getStoredRegister().at(0) == 'F') {
-                    if (instructions[instructionIndex].getStoredRegister()) //FIND WAY TO COMPARE REGISTER HERE TO REGISTER OBJECT AND IT'S INUSE BOOL
-                    
-                    addersInUse--;
-                    instructions[instructionIndex].setIssue(cycleCount);
-                }
-            }
-        } else if (currInstruction == "MUL.D") {
-            if (multipliersInUse > 0) { //check for any available multipliers
-                multipliersInUse--;
-                instructions[instructionIndex].setIssue(cycleCount);
-            }
-        } else if (currInstruction == "DIV.D") {
-            if (dividersInUse > 0) { //check for any available dividers
-                dividersInUse--;
-                instructions[instructionIndex].setIssue(cycleCount);
-            }
-        } else if (currInstruction == "L.D" || currInstruction == "S.D" || currInstruction == "LI" || currInstruction == "LW" || currInstruction == "SW") {
-            if (integerUnitsInUse > 0) { //check for any available integer units
-                integerUnitsInUse--;
-                instructions[instructionIndex].setIssue(cycleCount);
+        programCounter = issue(cycleCount, programCounter, instructions);
+        readOperands(cycleCount, instructions);
+        executionComplete(cycleCount, instructions);
+        writeResult(cycleCount, instructions);
+        finished = true;
+        for (int i = 0; i < lines; i++) {
+            if (instructions[i].getWriteResult() == 0) {
+                finished = true;
             }
         }
-
-        instructionIndex++;
         cycleCount++;
+    }    
+}
+
+int issue(int cycleCount, int programCounter, Line *instructions) {
+    string currInstruction = instructions[programCounter].getInstruction();
+    int index = int(instructions[programCounter].getStoredRegister().at(1));
+    if (currInstruction == "ADD" || currInstruction == "ADD.D" || currInstruction == "SUB" || currInstruction == "SUB.D" || currInstruction == "ADDI") {
+        if (NumAdders > 0) { //check for any available adders
+                
+            if (instructions[programCounter].getStoredRegister().at(0) == 'F') {
+                if (!floatingPointRegisters[index].getInUse()) {
+                    NumAdders--;
+                    instructions[programCounter].setIssue(cycleCount);
+                    instructions[programCounter].setExecutionTime(2);
+                    return programCounter++;
+                }
+            } else {
+                if (!integerRegisters[index].getInUse()) {
+                    NumAdders--;
+                    instructions[programCounter].setIssue(cycleCount);
+                    instructions[programCounter].setExecutionTime(2);
+                    return programCounter++;
+                }
+            }
+        } 
+    } else if (currInstruction == "MUL.D") {
+        if (NumMultipliers > 0) { //check for any available multipliers
+            if (instructions[programCounter].getStoredRegister().at(0) == 'F') {
+                if (!floatingPointRegisters[index].getInUse()) {
+                    NumMultipliers--;
+                    instructions[programCounter].setIssue(cycleCount);
+                    instructions[programCounter].setExecutionTime(10);
+                    return programCounter++;
+                }
+            } else {
+                if (!integerRegisters[index].getInUse()) {
+                    NumMultipliers--;
+                    instructions[programCounter].setIssue(cycleCount);
+                    instructions[programCounter].setExecutionTime(10);
+                    return programCounter++;
+                }
+            }
+        }
+    } else if (currInstruction == "DIV.D") {
+        if (NumDividers > 0) { //check for any available dividers
+            if (instructions[programCounter].getStoredRegister().at(0) == 'F') {
+                if (!floatingPointRegisters[index].getInUse()) {
+                    NumDividers--;
+                    instructions[programCounter].setIssue(cycleCount);
+                    instructions[programCounter].setExecutionTime(40);
+                    return programCounter++;
+                }
+            } else {
+                if (!integerRegisters[index].getInUse()) {
+                    NumDividers--;
+                    instructions[programCounter].setIssue(cycleCount);
+                    instructions[programCounter].setExecutionTime(40);
+                    return programCounter++;
+                }
+            }
+        }
+    } else if (currInstruction == "L.D" || currInstruction == "LW" || currInstruction == "S.D" || currInstruction == "SW" || currInstruction == "LI") {
+        if (NumIntegerUnits > 0) { //check for any available integer units
+            NumIntegerUnits--;
+            instructions[programCounter].setIssue(cycleCount);
+            instructions[programCounter].setExecutionTime(1);
+            return programCounter++;
+        }
+    }
+    return programCounter;
+}
+
+void readOperands(int cycleCount, Line *instructions) {
+    bool goodToRead = true;
+    for (int i = 0; i < lines; i++) {
+        if (instructions[i].getIssue() > 0 && instructions[i].getReadOperands() == 0) { //has been issued, not read
+            for (int j = 0; j < lines; j++) {
+                if (instructions[j].getReadOperands() > 0 && instructions[j].getExecution() == 0) { //currently executing
+                    if (instructions[i].getRegister1() == instructions[j].getStoredRegister() && 
+                    instructions[i].getRegister2() == instructions[j].getStoredRegister()) { //no RAW issue
+                        goodToRead = false;
+                    }
+                }
+            }           
+            if (goodToRead) {
+                instructions[i].setReadOperands(cycleCount);
+                instructions[i].setExecution(instructions[i].getExecutionTime() + cycleCount);
+            }
+        }
+    }
+}
+
+void executionComplete(int cycleCount, Line *instructions) {
+    for (int i = 0; i < lines; i++) {
+        if (instructions[i].getExecution() == cycleCount) {
+            instructions[i].setWriteResult(cycleCount + 1);
+        }
     }
     
 }
 
-// REMAKE WITH TEMPLATES AND CHECK ORDER OF OPERATIONS!!!!!!!!!!
-void add(IntRegister dest, IntRegister r1, IntRegister r2) {
-    dest.setValue(r1.getValue() + r2.getValue());
+void writeResult(int cycleCount, Line *instructions) {
+    for (int i = 0; i < lines; i++) {
+        int destIndex = int(instructions[i].getStoredRegister().at(1));
+        
+        // write functions to find values like address, registers etc.
+        string str;
+        bool track = false;
+        for (int j = 0; j < int(instructions[i].getAddress().length()); j++) {
+            if (instructions[i].getAddress().at(j) == ')') {
+                track = false;
+            }
+            if (track == true) {
+                str = str + instructions[i].getAddress().at(j);
+            }
+            if (instructions[i].getAddress().at(j) == '(') {
+                track = true;
+            }
+        }
+        int address = stoi(str);
+
+        string str2;
+        bool track2 = true;      
+        for (int j = 0; j < int(instructions[i].getAddress().length()); j++) {
+            if (instructions[i].getAddress().at(j) == '(') {
+                track2 = false;
+            }
+            if (track2 == true) {
+                str2 = str2 + instructions[i].getAddress().at(j);
+            }
+        }
+        address += stoi(str2);
+        int memValue = memoryTable[address];
+        
+        if (instructions[i].getWriteResult() == cycleCount) {
+            if(instructions[i].getInstruction() == "L.D") {
+                floatingPointRegisters[destIndex].load(memValue);
+            }else if(instructions[i].getInstruction() == "S.D") {
+                store<FloatRegister>(address, floatingPointRegisters[destIndex]);
+            }else if(instructions[i].getInstruction() == "LI") {
+                int r1Index = int(instructions[i].getRegister1().at(1));
+                floatingPointRegisters[destIndex].load(instructions[i].getImmediate());
+            }else if(instructions[i].getInstruction() == "LW") {
+                integerRegisters[destIndex].load(memValue);
+            }else if(instructions[i].getInstruction() == "SW") {
+                store<IntRegister>(address, integerRegisters[r1Index]);
+            }else if(instructions[i].getInstruction() == "ADD") {
+                integerRegisters[destIndex].add(integerRegisters[r1Index].getValue(), integerRegisters[r2Index].getValue());
+            }else if(instructions[i].getInstruction() == "ADDI") {
+                integerRegisters[destIndex].add(integerRegisters[r1Index].getValue(), instructions[i].getImmediate());
+            }else if(instructions[i].getInstruction() == "ADD.D") {
+                floatingPointRegisters[destIndex].add(floatingPointRegisters[r1Index].getValue(), floatingPointRegisters[r2Index].getValue());
+            }else if(instructions[i].getInstruction() == "SUB.D") {
+                floatingPointRegisters[destIndex].sub(floatingPointRegisters[r1Index].getValue(), floatingPointRegisters[r2Index].getValue());
+            }else if(instructions[i].getInstruction() == "SUB") {
+                integerRegisters[destIndex].sub(integerRegisters[r1Index].getValue(), integerRegisters[r2Index].getValue());
+            }else if(instructions[i].getInstruction() == "MUL.D") {
+                floatingPointRegisters[destIndex].mul(floatingPointRegisters[r1Index].getValue(), floatingPointRegisters[r2Index].getValue());
+            }else if(instructions[i].getInstruction() == "DIV.D") {
+                floatingPointRegisters[destIndex].div(floatingPointRegisters[r1Index].getValue(), floatingPointRegisters[r2Index].getValue());
+            }
+        }
+    }
 }
 
-void subtract(IntRegister dest, IntRegister r1, IntRegister r2) {
-    dest.setValue(r1.getValue() - r2.getValue());
-}
-
-void multiply(IntRegister dest, IntRegister r1, IntRegister r2) {
-    dest.setValue(r1.getValue() * r2.getValue());
-}
-
-void divide(IntRegister dest, IntRegister r1, IntRegister r2) {
-    dest.setValue(r1.getValue() / r2.getValue());
+template <typename T>
+void store(int address, T r1) {
+    memoryTable[address] = r1.getValue();
 }
 
 void outputResult(Line *instructions, int lines) {

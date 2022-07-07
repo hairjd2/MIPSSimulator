@@ -39,6 +39,10 @@ void Line::setImmediate(int immediate) {
 void Line::setAccessesMem(bool accessesMem) {
     m_accessesMem = accessesMem;
 }
+
+void Line::setExecutionTime(int executionTime) {
+    m_executionTime = executionTime;
+}
 // Getter method for instruction value
 string Line::getInstruction() {
     return m_instruction;
@@ -60,6 +64,22 @@ string Line::getRegister2() {
     return m_register2;
 }
 
+int Line::getIssue() {
+    return m_issue;
+}
+
+int Line::getReadOperands() {
+    return m_readOperands;
+}
+
+int Line::getExecution() {
+    return m_execution;
+}
+
+int Line::getWriteResult() {
+    return m_writeResult;
+}
+
 int Line::getImmediate() {
     return m_immediate;
 }
@@ -67,6 +87,10 @@ int Line::getImmediate() {
 // Getter method for load/store boolean
 bool Line::getAccessesMem() {
     return m_accessesMem;
+}
+
+int Line::getExecutionTime() {
+    return m_executionTime;
 }
 
 void Line::setIssue(int issue) {
@@ -102,13 +126,24 @@ void Line::displayScoreBoardLine() {
     else {
         cout << "\tDest: " << m_storedRegister;
     }
-
-    cout << "\tS1: " << m_register1;
-    cout << "\tS2: " << m_register2;
+    if(m_accessesMem) {
+        if(m_instruction == "LI") {
+            cout << "\tS1: " << 0;
+            cout << "\tS2: " << m_immediate;
+        } else {
+            cout << "\tS1: " << 0;
+            cout << "\tS2: " << m_address;
+        }
+    } else if(m_instruction == "ADDI") {
+        cout << "\tS1: " << m_register1;
+        cout << "\tS2: " << m_immediate << "\t";
+    } else {
+        cout << "\tS1: " << m_register1;
+        cout << "\tS2: " << m_register2 << "\t";
+    }
     cout << "\tIssue: " << m_issue;
     cout << "\tRead Operands: " << m_readOperands;
     cout << "\tExecution: " << m_execution;
     cout << "\tWrite Results: " << m_writeResult;
     cout << endl;
-    
 }

@@ -11,6 +11,7 @@ private:
     string m_storedRegister;
     string m_address;
     int m_immediate;
+    int m_executionTime;
     int m_issue;
     int m_readOperands;
     int m_execution;
@@ -26,11 +27,17 @@ public:
     void setAddress(string address);
     void setImmediate(int immediate); 
     void setAccessesMem(bool accessesMem);
+    void setExecutionTime(int executionTime);
     string getInstruction();
     string getStoredRegister();
     string getAddress();
     string getRegister1();
     string getRegister2();
+    int getExecutionTime();
+    int getIssue();
+    int getReadOperands();
+    int getExecution();
+    int getWriteResult();
     int getImmediate();
     bool getAccessesMem();
     void setIssue(int issue);

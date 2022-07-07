@@ -25,6 +25,30 @@ int IntRegister::getValue() {
     return m_value;
 }
 
+void IntRegister::add(int r1, int r2) {
+    m_value = r1 + r2;
+}
+
+void IntRegister::addi(int r1, int immediate) {
+    m_value = r1 + immediate;
+}
+
+void IntRegister::sub(int r1, int r2) {
+    m_value = r1 - r2;
+}
+
+void IntRegister::mul(int r1, int r2) {
+    m_value = r1 * r2;
+}
+
+void IntRegister::div(int r1, int r2) {
+    m_value = r1 / r2;
+}
+
+void IntRegister::load(int value) {
+    m_value = value;
+}
+
 void IntRegister::displayValue() {
     cout << m_name << " = " << m_value << endl;
 }

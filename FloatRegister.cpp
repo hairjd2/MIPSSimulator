@@ -24,6 +24,31 @@ float FloatRegister::getValue() {
     return m_value;
 }
 
+void FloatRegister::add(float r1, float r2) {
+    m_value = r1 + r2;
+}
+
+void FloatRegister::addi(float r1, int immediate) {
+    m_value = r1 + float(immediate);
+}
+
+void FloatRegister::sub(float r1, float r2) {
+    m_value = r1 - r2;
+}
+
+void FloatRegister::mul(float r1, float r2) {
+    m_value = r1 * r2;
+}
+
+void FloatRegister::div(float r1, float r2) {
+    m_value = r1 / r2;
+}
+
+void FloatRegister::load(int value) {
+    m_value = float(value);
+}
+
 void FloatRegister::displayValue() {
     cout << m_name << " = " << m_value << endl;
 }
+

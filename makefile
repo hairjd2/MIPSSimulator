@@ -15,3 +15,9 @@ FloatRegister.o: FloatRegister.h FloatRegister.cpp
 
 run:
 	./output
+
+valgrind:
+	valgrind ./output
+
+gdb:
+	gdb ./output
