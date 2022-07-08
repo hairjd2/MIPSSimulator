@@ -4,11 +4,12 @@
 ### 1. Download zip file
 ### 2. Extract the contents
 ### 3. Compile the Code (Can skip if you don't need to recompile, will need to recompile on first run)
+To compile the code, in a terminal navigate to the downloaded zip file and type:
 ```
 make
 ```
 ### 4. Run the executable
-In a terminal, navigate to the downloaded zip file and type:
+To run the code, type: 
 ```
 make run
 ```
