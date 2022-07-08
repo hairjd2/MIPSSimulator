@@ -1,3 +1,4 @@
+/* John Hair and Nicholas Battista */
 #ifndef LINE_H
 #define LINE_H
 #include <iostream>

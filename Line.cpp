@@ -1,3 +1,4 @@
+/* John Hair and Nicholas Battista */
 #include "Line.h"
 // Line Constructor
 Line::Line() {

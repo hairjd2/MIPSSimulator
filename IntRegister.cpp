@@ -1,3 +1,4 @@
+/* John Hair and Nicholas Battista */
 #include "IntRegister.h"
 // Register Constructor
 IntRegister::IntRegister() {

@@ -1,3 +1,4 @@
+/* John Hair and Nicholas Battista */
 #ifndef INT_REGISTER_H
 #define INT_REGISTER_H
 #include <iostream>

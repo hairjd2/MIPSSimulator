@@ -1,3 +1,4 @@
+/* John Hair and Nicholas Battista */
 #include "FloatRegister.h"
 // Register Constructor
 FloatRegister::FloatRegister() {

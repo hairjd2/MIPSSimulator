@@ -1,3 +1,4 @@
+/* John Hair and Nicholas Battista */
 #ifndef FLOAT_REGISTER_H
 #define FLOAT_REGISTER_H
 #include <iostream>
