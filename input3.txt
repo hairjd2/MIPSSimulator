@@ -1,0 +1,7 @@
+L.D F2, 0(1)
+DIV.D F4, F2, F0
+L.D F6, 0(2)
+ADD.D F4, F4, F2
+MUL.D F4, F6, F4
+DIV.D F3, F6, F4
+S.D F3, 0(3)

@@ -15,6 +15,7 @@ public:
     void setName(string name);
     bool getInUse();
     int getValue();
+    string getName();
     void displayValue();
     void add(int r1, int r2);
     void addi(int r1, int immediate);

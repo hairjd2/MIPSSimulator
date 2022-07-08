@@ -1,13 +1,14 @@
 # MIPSSimulator User Manual (by Nicholas Battista and John Hair)
-**This program works best in a linux environment, unless you are able to compile it in Windows/MacOS**
+**This program works best in a linux environment (especially on the gl server), unless you are able to compile it in Windows/MacOS**
 ## Instructions:
 ### 1. Download zip file
-### 2. extract the contents
-### 3. Compile the Code
+### 2. Extract the contents
+### 3. Compile the Code (Can skip if you don't need to recompile)
 ```
 make
 ```
 ### 4. Run the executable
+In a terminal, navigate to the downloaded zip file and type:
 ```
 make run
 ```

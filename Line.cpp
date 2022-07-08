@@ -64,22 +64,27 @@ string Line::getRegister2() {
     return m_register2;
 }
 
+// Getter method for issue cycle time
 int Line::getIssue() {
     return m_issue;
 }
 
+// Getter method for read operands cycle time
 int Line::getReadOperands() {
     return m_readOperands;
 }
 
+// Getter method for execution completion cycle time
 int Line::getExecution() {
     return m_execution;
 }
 
+// Getter method for write back cycle time
 int Line::getWriteResult() {
     return m_writeResult;
 }
 
+// Getter method for immediate value
 int Line::getImmediate() {
     return m_immediate;
 }
@@ -89,29 +94,37 @@ bool Line::getAccessesMem() {
     return m_accessesMem;
 }
 
+// Getter method for instruction to execute
 int Line::getExecutionTime() {
     return m_executionTime;
 }
 
+// Setter method for issue cycle time
 void Line::setIssue(int issue) {
     m_issue = issue;
 }
 
+// Getter method for read operands cycle time
 void Line::setReadOperands(int readOperands) {
     m_readOperands = readOperands;
 }
 
+// Getter method for execution completion cycle time
 void Line::setExecution(int execution) {
     m_execution = execution;
 }
 
+// Getter method for write back cycle time
 void Line::setWriteResult(int writeResult) {
     m_writeResult = writeResult;
 }
 
+// Formatted output for each line
 void Line::displayScoreBoardLine() {
-    if(m_instruction == "S.D" || m_instruction == "L.D") {
+    if(m_instruction.at(0) == 'L') {
         cout << m_instruction << " " << m_storedRegister << ", " << m_address << "\t";
+    }else if(m_instruction == "S.D" || m_instruction == "SW") {
+        cout << m_instruction << " " << m_register2 << ", " << m_storedRegister << ")";
     }
     else if(m_instruction == "ADDI") {
         cout << m_instruction << " " << m_storedRegister << ", " << m_register1 << ", " << m_immediate;
@@ -123,13 +136,20 @@ void Line::displayScoreBoardLine() {
     if(m_instruction == "ADDI") {
         cout << "\t\tDest: " << m_storedRegister;
     }
+    else if(m_instruction == "S.D" || m_instruction == "SW") {
+        cout << "\t\tDest: " << m_storedRegister << ")";
+    }
     else {
         cout << "\tDest: " << m_storedRegister;
     }
+
     if(m_accessesMem) {
         if(m_instruction == "LI") {
             cout << "\tS1: " << 0;
             cout << "\tS2: " << m_immediate;
+        } else if(m_instruction == "S.D" || m_instruction == "SW") {
+            cout << "\tS1: " << 0;
+            cout << "\tS2: " << m_register2;
         } else {
             cout << "\tS1: " << 0;
             cout << "\tS2: " << m_address;
@@ -141,7 +161,13 @@ void Line::displayScoreBoardLine() {
         cout << "\tS1: " << m_register1;
         cout << "\tS2: " << m_register2 << "\t";
     }
-    cout << "\tIssue: " << m_issue;
+
+    if (m_instruction == "S.D" || m_instruction == "SW") {
+        cout << "\t\tIssue: " << m_issue;
+    } else {
+        cout << "\tIssue: " << m_issue;
+    }
+
     cout << "\tRead Operands: " << m_readOperands;
     cout << "\tExecution: " << m_execution;
     cout << "\tWrite Results: " << m_writeResult;

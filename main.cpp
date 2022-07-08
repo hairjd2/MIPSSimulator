@@ -1,3 +1,4 @@
+/* John Hair and Nicholas Battista */
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -11,6 +12,13 @@ using namespace std;
 const int MEMORY_SIZE = 19;
 const int FP_REGISTER_COUNT = 32;
 const int INT_REGISTER_COUNT = 32;
+
+const int ADDER_CYCLES = 2;
+const int MUL_CYCLES = 10;
+const int DIV_CYCLES = 40;
+const int INT_CYCLES = 1;
+
+const int zeroASCII = 48;
 
 int NumAdders = 0;
 int NumMultipliers = 0;
@@ -40,6 +48,10 @@ void writeResult(int cycleCount, Line *instructions);
 // Arithmetic Functions
 template <typename T>
 void store(int address, T r1);
+int getRegister1Index(Line *instructions, int instruction);
+int getRegister2Index(Line *instructions, int instruction);
+int getAddress(Line *instructions, int instruction);
+int getAddressStore(Line *instructions, int instruction);
 
 int main() {
 // Main function: takes in initial inputs and runs the helper functions
@@ -71,11 +83,13 @@ int main() {
     for(int i = 0; i < FP_REGISTER_COUNT; i++) {
         tempName = "F" + to_string(i);
         floatingPointRegisters[i].setName(tempName);
+        floatingPointRegisters[i].setInUse(false);
     }
 
     for(int j = 0; j < INT_REGISTER_COUNT; j++) {
         tempName = "$" + to_string(j);
         integerRegisters[j].setName(tempName);
+        integerRegisters[j].setInUse(false);
     }
     lines = findLines(fileName);
     Line *instructions = new Line[lines];
@@ -88,6 +102,8 @@ int main() {
 
 // Outputs final register values and table
     outputResult(instructions, lines);
+    delete [] instructions;
+    return 0;
 }
 
 int findLines(string fileName) {
@@ -139,22 +155,28 @@ void readFile(string fileName, int lines, Line *instructions) {
             }
 // If count is 1 or count is 2 and it is a load or store instruction, then the read in is on the second "word", a.k.a. the "stored register"
             else if(count == 1 || (count == 2 && memory)) {
-                if(instructions[line].getInstruction() == "LI") {
-                    instructions[line].setImmediate(stoi(temp));
+                if(instructions[line].getInstruction().at(0) == 'S' && memory) {
+                    string corrected = temp;
+                    corrected.pop_back();
+                    instructions[line].setRegister2(corrected);
                 }else {
                     instructions[line].setStoredRegister(temp);
                 }
             }
 // If count is 2 but not a load or store instruction, then it is the first register in the arithmetic input
             else if(count == 2) {
-                instructions[line].setRegister1(temp);
+                    instructions[line].setRegister1(temp);
             }
             else if(count == 3) {
 // If count is 3 and a load or store instruction, then the temp string holds the address
-                if(memory) {
-                    instructions[line].setAddress(temp);
+                if(memory && instructions[line].getInstruction() != "LI") {
+                    if(instructions[line].getInstruction().at(0) == 'S') {
+                        instructions[line].setStoredRegister(temp);
+                    } else {
+                        instructions[line].setAddress(temp);
+                    }
                 }
-                else if(instructions[line].getInstruction() == "ADDI") {
+                else if(instructions[line].getInstruction() == "ADDI" || instructions[line].getInstruction() == "LI") {
                     instructions[line].setImmediate(stoi(temp));
                 }
 
@@ -179,59 +201,54 @@ void readFile(string fileName, int lines, Line *instructions) {
 }
 
 void run(Line *instructions, int lines) {
-    /* Steps for scoreboarding process
-    Choose next instruction
-    Check if instruction of same type is being run
-    If it is, don't issue. If it's not, check if the dest reg is already being written to
-    If it is, don't issue. If not, issue the instruction
-
-    Check each instruction currently issued to see if it can be read:
-    is m_reg1 or m_reg2 the same as the dest reg of an instruction currently executing?
-    if yes, do not read. If no, read
-
-    Check each instruction in execution if the curr cycle == cycle execution will finish
-    if they're equal, mark execution as done. If not, continue
-
-    Check each instruction for writeback
-    if execution is marked as done, writeback
-    */
+    /* Handles the main scoreboard cycling
+    One while loop = one scoreboard cycle */
     int cycleCount = 1;
     int programCounter = 0; //index for current instruction in array
     bool finished = false;
     while (finished == false) {
-        programCounter = issue(cycleCount, programCounter, instructions);
+        if(programCounter < lines) { //prevents from attempting to issue a nonexistent instruction
+            programCounter = issue(cycleCount, programCounter, instructions);
+        }
         readOperands(cycleCount, instructions);
         executionComplete(cycleCount, instructions);
         writeResult(cycleCount, instructions);
         finished = true;
         for (int i = 0; i < lines; i++) {
-            if (instructions[i].getWriteResult() == 0) {
-                finished = true;
+            if (instructions[i].getWriteResult() == 0) { //if any instructions haven't been written, not finished
+                finished = false;
             }
         }
         cycleCount++;
-    }    
+    }
 }
 
 int issue(int cycleCount, int programCounter, Line *instructions) {
+    /* Steps for issuing
+    Choose next instruction
+    Check if instruction of same type is being run
+    If it is, don't issue. If it's not, check if the dest reg is already being written to
+    If it is, don't issue. If not, issue the instruction */
+    
     string currInstruction = instructions[programCounter].getInstruction();
-    int index = int(instructions[programCounter].getStoredRegister().at(1));
+    int index = int(instructions[programCounter].getStoredRegister().at(1)) - zeroASCII;
     if (currInstruction == "ADD" || currInstruction == "ADD.D" || currInstruction == "SUB" || currInstruction == "SUB.D" || currInstruction == "ADDI") {
-        if (NumAdders > 0) { //check for any available adders
-                
-            if (instructions[programCounter].getStoredRegister().at(0) == 'F') {
-                if (!floatingPointRegisters[index].getInUse()) {
-                    NumAdders--;
+        if (NumAdders > 0) { //check for any available adders    
+            if (instructions[programCounter].getStoredRegister().at(0) == 'F') { //checks if storing in FP reg
+                if (!floatingPointRegisters[index].getInUse()) { //if dest reg isn't being written to by another instruction
+                    NumAdders--; //takes up an adder
                     instructions[programCounter].setIssue(cycleCount);
-                    instructions[programCounter].setExecutionTime(2);
-                    return programCounter++;
+                    instructions[programCounter].setExecutionTime(2); //sets length of execution (2 cycles for adder)
+                    floatingPointRegisters[index].setInUse(true);
+                    ++programCounter; //moves PC to next instruction
                 }
             } else {
-                if (!integerRegisters[index].getInUse()) {
+                if (!integerRegisters[index].getInUse()) { //if storing in Int reg OR 
                     NumAdders--;
                     instructions[programCounter].setIssue(cycleCount);
                     instructions[programCounter].setExecutionTime(2);
-                    return programCounter++;
+                    integerRegisters[index].setInUse(true);
+                    ++programCounter;
                 }
             }
         } 
@@ -242,14 +259,16 @@ int issue(int cycleCount, int programCounter, Line *instructions) {
                     NumMultipliers--;
                     instructions[programCounter].setIssue(cycleCount);
                     instructions[programCounter].setExecutionTime(10);
-                    return programCounter++;
+                    floatingPointRegisters[index].setInUse(true);
+                    ++programCounter;
                 }
             } else {
                 if (!integerRegisters[index].getInUse()) {
                     NumMultipliers--;
                     instructions[programCounter].setIssue(cycleCount);
                     instructions[programCounter].setExecutionTime(10);
-                    return programCounter++;
+                    integerRegisters[index].setInUse(true);
+                    ++programCounter;
                 }
             }
         }
@@ -260,124 +279,212 @@ int issue(int cycleCount, int programCounter, Line *instructions) {
                     NumDividers--;
                     instructions[programCounter].setIssue(cycleCount);
                     instructions[programCounter].setExecutionTime(40);
-                    return programCounter++;
+                    floatingPointRegisters[index].setInUse(true);
+                    ++programCounter;
                 }
             } else {
                 if (!integerRegisters[index].getInUse()) {
                     NumDividers--;
                     instructions[programCounter].setIssue(cycleCount);
                     instructions[programCounter].setExecutionTime(40);
-                    return programCounter++;
+                    integerRegisters[index].setInUse(true);
+                    ++programCounter;
                 }
             }
         }
-    } else if (currInstruction == "L.D" || currInstruction == "LW" || currInstruction == "S.D" || currInstruction == "SW" || currInstruction == "LI") {
+    } else if (currInstruction == "L.D" || currInstruction == "LW" || currInstruction == "LI" || currInstruction == "S.D" || currInstruction == "SW") {
         if (NumIntegerUnits > 0) { //check for any available integer units
             NumIntegerUnits--;
             instructions[programCounter].setIssue(cycleCount);
             instructions[programCounter].setExecutionTime(1);
-            return programCounter++;
+            floatingPointRegisters[index].setInUse(true);
+            ++programCounter;
         }
     }
-    return programCounter;
+
+    return programCounter; //updates PC in run method
 }
 
 void readOperands(int cycleCount, Line *instructions) {
+    /*Check each instruction currently issued to see if it can be read:
+    is m_reg1 or m_reg2 the same as the dest reg of an instruction currently executing?
+    if yes, do not read. If no, read*/
     bool goodToRead = true;
     for (int i = 0; i < lines; i++) {
-        if (instructions[i].getIssue() > 0 && instructions[i].getReadOperands() == 0) { //has been issued, not read
+        if (instructions[i].getIssue() != cycleCount && instructions[i].getIssue() > 0 && instructions[i].getReadOperands() == 0) { //has been issued, not read
             for (int j = 0; j < lines; j++) {
-                if (instructions[j].getReadOperands() > 0 && instructions[j].getExecution() == 0) { //currently executing
-                    if (instructions[i].getRegister1() == instructions[j].getStoredRegister() && 
-                    instructions[i].getRegister2() == instructions[j].getStoredRegister()) { //no RAW issue
+                if (instructions[j].getWriteResult() == cycleCount || (instructions[j].getReadOperands() > 0 && instructions[j].getWriteResult() == 0)) { //only uses currently executing instructions
+                    if (instructions[i].getRegister1() == instructions[j].getStoredRegister() || 
+                    instructions[i].getRegister2() == instructions[j].getStoredRegister()) { //RAW issue, don't read
                         goodToRead = false;
                     }
                 }
             }           
             if (goodToRead) {
                 instructions[i].setReadOperands(cycleCount);
-                instructions[i].setExecution(instructions[i].getExecutionTime() + cycleCount);
+                instructions[i].setExecution(instructions[i].getExecutionTime() + cycleCount); //Sets execution time ahead of time to be checked in executionComplete
             }
         }
     }
 }
 
 void executionComplete(int cycleCount, Line *instructions) {
+    /*
+    Check each instruction in execution if the curr cycle == cycle execution will finish
+    if they're equal, mark execution as done. If not, continue
+    */
+    
     for (int i = 0; i < lines; i++) {
         if (instructions[i].getExecution() == cycleCount) {
-            instructions[i].setWriteResult(cycleCount + 1);
+            instructions[i].setWriteResult(cycleCount + 1); //sets write cycle result ahead of time to be checked in writeResult
         }
     }
-    
 }
 
 void writeResult(int cycleCount, Line *instructions) {
+    /* 
+    Check each instruction for writeback
+    if execution is marked as done, writeback
+    */
+    
     for (int i = 0; i < lines; i++) {
-        int destIndex = int(instructions[i].getStoredRegister().at(1));
+        int destIndex = int(instructions[i].getStoredRegister().at(1)) - zeroASCII;
         
-        // write functions to find values like address, registers etc.
+        if (instructions[i].getWriteResult() == cycleCount) { //if instruction ready to write
+            if(instructions[i].getInstruction() == "L.D") {
+                int memValue = memoryTable[getAddress(instructions, i)]; //gets value from memory
+                floatingPointRegisters[destIndex].load(memValue);
+                floatingPointRegisters[destIndex].setInUse(false); //dest reg no longer being written to
+                NumIntegerUnits++; //frees up an integer unit
+            }else if(instructions[i].getInstruction() == "S.D") {
+                store<FloatRegister>(getAddressStore(instructions, i), floatingPointRegisters[getRegister2Index(instructions, i)]); //stores value from reg2 into a mem address
+                floatingPointRegisters[destIndex].setInUse(false);
+                NumIntegerUnits++;
+            }else if(instructions[i].getInstruction() == "LI") {
+                floatingPointRegisters[destIndex].load(instructions[i].getImmediate()); //loads an immediate, memValue not needed
+                NumIntegerUnits++;
+            }else if(instructions[i].getInstruction() == "LW") { //same as L.D instruction but for int reg
+                int memValue = memoryTable[getAddress(instructions, i)];
+                integerRegisters[destIndex].load(memValue);
+                integerRegisters[destIndex].setInUse(false);
+                NumIntegerUnits++;
+            }else if(instructions[i].getInstruction() == "SW") { //same as S.D instruction but for int reg
+                store<IntRegister>(destIndex, integerRegisters[getRegister2Index(instructions, i)]);
+                integerRegisters[destIndex].setInUse(false);
+                NumIntegerUnits++;
+            }else if(instructions[i].getInstruction() == "ADD") { // Adds r1 and r2 of line and stores into dest register
+                integerRegisters[destIndex].add(integerRegisters[getRegister1Index(instructions, i)].getValue(), integerRegisters[getRegister2Index(instructions, i)].getValue());
+                integerRegisters[destIndex].setInUse(false);
+                NumAdders++;
+            }else if(instructions[i].getInstruction() == "ADDI") { // same as ADD but adds immeidate value instead of register value
+                integerRegisters[destIndex].add(integerRegisters[getRegister1Index(instructions, i)].getValue(), instructions[i].getImmediate());
+                integerRegisters[destIndex].setInUse(false);
+                NumAdders++;
+            }else if(instructions[i].getInstruction() == "ADD.D") { // same as ADD but for floating point registers
+                floatingPointRegisters[destIndex].add(floatingPointRegisters[getRegister1Index(instructions, i)].getValue(), floatingPointRegisters[getRegister2Index(instructions, i)].getValue());
+                floatingPointRegisters[destIndex].setInUse(false);
+                NumAdders++;
+            }else if(instructions[i].getInstruction() == "SUB.D") { // Subtracts r1 and r2 of line and stores into dest register
+                floatingPointRegisters[destIndex].sub(floatingPointRegisters[getRegister1Index(instructions, i)].getValue(), floatingPointRegisters[getRegister2Index(instructions, i)].getValue());
+                floatingPointRegisters[destIndex].setInUse(false);
+                NumAdders++;
+            }else if(instructions[i].getInstruction() == "SUB") { //same as SUB.D but for integer registers
+                integerRegisters[destIndex].sub(integerRegisters[getRegister1Index(instructions, i)].getValue(), integerRegisters[getRegister2Index(instructions, i)].getValue());
+                integerRegisters[destIndex].setInUse(false);
+                NumAdders++;
+            }else if(instructions[i].getInstruction() == "MUL.D") { // Multiplies r1 and r2 of line and stores into dest register
+                floatingPointRegisters[destIndex].mul(floatingPointRegisters[getRegister1Index(instructions, i)].getValue(), floatingPointRegisters[getRegister2Index(instructions, i)].getValue());
+                floatingPointRegisters[destIndex].setInUse(false);
+                NumMultipliers++;
+            }else if(instructions[i].getInstruction() == "DIV.D") { // Divides r1 and r2 of line and stores into dest register
+                floatingPointRegisters[destIndex].div(floatingPointRegisters[getRegister1Index(instructions, i)].getValue(), floatingPointRegisters[getRegister2Index(instructions, i)].getValue());
+                floatingPointRegisters[destIndex].setInUse(false);
+                NumDividers++;
+            }
+        }
+    }
+}
+
+// Separate function for updating value in the memory table
+template <typename T>
+void store(int address, T r1) {
+    memoryTable[address] = r1.getValue();
+}
+
+// Returns the index of the register object
+int getRegister1Index(Line *instructions, int instruction) {
+    return int(instructions[instruction].getRegister1().at(1)) - zeroASCII;
+}
+
+// Returns the index of the register object
+int getRegister2Index(Line *instructions, int instruction) {
+    return int(instructions[instruction].getRegister2().at(1)) - zeroASCII;
+}
+
+// Parses the address string and returns a singular int to be used as an index
+int getAddress(Line *instructions, int instruction) {
+    // write functions to find values like address, registers etc.
         string str;
         bool track = false;
-        for (int j = 0; j < int(instructions[i].getAddress().length()); j++) {
-            if (instructions[i].getAddress().at(j) == ')') {
+        for (int j = 0; j < int(instructions[instruction].getAddress().length()); j++) {
+            if (instructions[instruction].getAddress().at(j) == ')') {
                 track = false;
             }
             if (track == true) {
-                str = str + instructions[i].getAddress().at(j);
+                str = str + instructions[instruction].getAddress().at(j);
             }
-            if (instructions[i].getAddress().at(j) == '(') {
+            if (instructions[instruction].getAddress().at(j) == '(') {
                 track = true;
             }
         }
+
         int address = stoi(str);
 
         string str2;
         bool track2 = true;      
-        for (int j = 0; j < int(instructions[i].getAddress().length()); j++) {
-            if (instructions[i].getAddress().at(j) == '(') {
+        for (int j = 0; j < int(instructions[instruction].getAddress().length()); j++) {
+            if (instructions[instruction].getAddress().at(j) == '(') {
                 track2 = false;
             }
             if (track2 == true) {
-                str2 = str2 + instructions[i].getAddress().at(j);
+                str2 = str2 + instructions[instruction].getAddress().at(j);
             }
         }
         address += stoi(str2);
-        int memValue = memoryTable[address];
-        
-        if (instructions[i].getWriteResult() == cycleCount) {
-            if(instructions[i].getInstruction() == "L.D") {
-                floatingPointRegisters[destIndex].load(memValue);
-            }else if(instructions[i].getInstruction() == "S.D") {
-                store<FloatRegister>(address, floatingPointRegisters[destIndex]);
-            }else if(instructions[i].getInstruction() == "LI") {
-                int r1Index = int(instructions[i].getRegister1().at(1));
-                floatingPointRegisters[destIndex].load(instructions[i].getImmediate());
-            }else if(instructions[i].getInstruction() == "LW") {
-                integerRegisters[destIndex].load(memValue);
-            }else if(instructions[i].getInstruction() == "SW") {
-                store<IntRegister>(address, integerRegisters[r1Index]);
-            }else if(instructions[i].getInstruction() == "ADD") {
-                integerRegisters[destIndex].add(integerRegisters[r1Index].getValue(), integerRegisters[r2Index].getValue());
-            }else if(instructions[i].getInstruction() == "ADDI") {
-                integerRegisters[destIndex].add(integerRegisters[r1Index].getValue(), instructions[i].getImmediate());
-            }else if(instructions[i].getInstruction() == "ADD.D") {
-                floatingPointRegisters[destIndex].add(floatingPointRegisters[r1Index].getValue(), floatingPointRegisters[r2Index].getValue());
-            }else if(instructions[i].getInstruction() == "SUB.D") {
-                floatingPointRegisters[destIndex].sub(floatingPointRegisters[r1Index].getValue(), floatingPointRegisters[r2Index].getValue());
-            }else if(instructions[i].getInstruction() == "SUB") {
-                integerRegisters[destIndex].sub(integerRegisters[r1Index].getValue(), integerRegisters[r2Index].getValue());
-            }else if(instructions[i].getInstruction() == "MUL.D") {
-                floatingPointRegisters[destIndex].mul(floatingPointRegisters[r1Index].getValue(), floatingPointRegisters[r2Index].getValue());
-            }else if(instructions[i].getInstruction() == "DIV.D") {
-                floatingPointRegisters[destIndex].div(floatingPointRegisters[r1Index].getValue(), floatingPointRegisters[r2Index].getValue());
-            }
-        }
-    }
+        return address;
 }
 
-template <typename T>
-void store(int address, T r1) {
-    memoryTable[address] = r1.getValue();
+// Same as function above but for store instructions
+int getAddressStore(Line *instructions, int instruction) {
+    // write functions to find values like address, registers etc.
+        string str;
+        bool track = false;
+        for (int j = 0; j < int(instructions[instruction].getStoredRegister().length()); j++) {
+            if (instructions[instruction].getStoredRegister().at(j) == ')') {
+                track = false;
+            }
+            if (track == true) {
+                str = str + instructions[instruction].getStoredRegister().at(j);
+            }
+            if (instructions[instruction].getStoredRegister().at(j) == '(') {
+                track = true;
+            }
+        }
+
+        int address = stoi(str);
+
+        string str2;
+        bool track2 = true;      
+        for (int j = 0; j < int(instructions[instruction].getStoredRegister().length()); j++) {
+            if (instructions[instruction].getStoredRegister().at(j) == '(') {
+                track2 = false;
+            }
+            if (track2 == true) {
+                str2 = str2 + instructions[instruction].getStoredRegister().at(j);
+            }
+        }
+        address += stoi(str2);
+        return address;
 }
 
 void outputResult(Line *instructions, int lines) {
@@ -399,6 +506,4 @@ void outputResult(Line *instructions, int lines) {
         // This for loop for now just outputs all of the fields that every object has as a test
         instructions[i].displayScoreBoardLine();
     }
-
-    delete [] instructions;
 }
