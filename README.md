@@ -3,7 +3,7 @@
 ## Instructions:
 ### 1. Download zip file
 ### 2. Extract the contents
-### 3. Compile the Code (Can skip if you don't need to recompile)
+### 3. Compile the Code (Can skip if you don't need to recompile, will need to recompile on first run)
 ```
 make
 ```
